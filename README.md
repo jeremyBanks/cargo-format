@@ -1,5 +1,5 @@
 ```sh
-$ cargo install cargo-format --version 0.0.1
+$ cargo install cargo-format
 ```
 
 > like `cargo fmt`, but moreso

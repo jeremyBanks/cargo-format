@@ -1,8 +1,56 @@
 [package]
-name = "cargo-format"
-version = "0.1.0"
+authors = ["Jeremy Banks <_@jeremy.ca>"]
+description = "like cargo-fmt, but moreso"
 edition = "2021"
+include = ["/src/**.rs", "/*.toml", "/*.md"]
+license = "MIT OR Apache-2.0"
+name = "cargo-format"
+repository = "https://github.com/jeremyBanks/cargo-format"
+resolver = "2"
+version = "0.0.1-dev"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package.metadata.release]
+allow-branch = ["trunk"]
+dev-version = true
+dev-version-ext = "dev"
+post-release-commit-message = "v{{next_version}}"
+pre-release-commit-message = "v{{version}}"
+tag-message = "https://crates.io/crates/{{crate_name}}/{{version}}"
+tag-name = "{{version}}"
 
-[dependencies]
+[[package.metadata.release.post-release-replacements]]
+file = "README.md"
+search = "cargo install cargo-format( --version .*)?\n"
+replace = "cargo install cargo-format\n"
+
+[[package.metadata.release.pre-release-replacements]]
+file = "README.md"
+search = "cargo install cargo-format( --version .*)?\n"
+replace = "cargo install cargo-format --version {{version}}\n"
+
+[dependencies.clap]
+features = ["derive", "env", "cargo", "unicode", "wrap_help"]
+version = "3.0.4"
+
+[dependencies.color-eyre]
+version = "0.5.11"
+
+[dependencies.eyre]
+version = "0.6.5"
+
+[dependencies.remain]
+version = "0.2.2"
+
+[dependencies.tracing]
+features = ["log"]
+version = "0.1.29"
+
+[dependencies.tracing-error]
+features = ["traced-error"]
+version = "0.1.2"
+
+[dependencies.tracing-log]
+version = "0.1.2"
+
+[dependencies.tracing-subscriber]
+version = "0.2.5"

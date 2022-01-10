@@ -28,6 +28,9 @@ file = "README.md"
 search = "cargo install cargo-format( --version .*)?\n"
 replace = "cargo install cargo-format --version {{version}}\n"
 
+[dependencies]
+which = "4.2.2"
+
 [dependencies.clap]
 features = ["derive", "env", "cargo", "unicode", "wrap_help"]
 version = "3.0.4"

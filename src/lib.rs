@@ -7,9 +7,10 @@
 )]
 
 use {
-    eyre::Result,
-    std::{env},
+    eyre::{bail, Result},
+    std::{env, process::Command},
     tracing::{instrument, warn},
+    which::which,
 };
 
 /// CLI entry point.
@@ -23,9 +24,79 @@ use {
 /// For other fatal errors.
 #[instrument(level = "debug")]
 pub fn main() -> Result<()> {
+    let env_cargo = env::var("CARGO").ok();
+    let path_cargo = which("cargo").ok();
+    let path_rustup = which("rustup").ok();
     let env_args = env::args().collect::<Vec<_>>();
-    let env_cargo = env::var("CARGO").unwrap_or_default();
-    dbg!(env_args, env_cargo);
+    let as_subcommand = env_cargo.is_some() && env_args.len() >= 2 && env_args[1] == "format";
+    let args = if as_subcommand {
+        &env_args[2..]
+    } else {
+        &env_args[1..]
+    };
+
+    let env_cargo_is_nightly = env_cargo
+        .as_ref()
+        .and_then(|env_cargo| {
+            let output = Command::new(env_cargo).arg("--version").output().ok()?;
+            if output.status.success() {
+                let stdout = std::str::from_utf8(&output.stdout).ok()?;
+                Some(stdout.starts_with("cargo ") && stdout.contains("-nightly "))
+            } else {
+                None
+            }
+        })
+        .unwrap_or(false);
+
+    let path_cargo_is_nightly = path_cargo
+        .as_ref()
+        .and_then(|path_cargo| {
+            let output = Command::new(path_cargo).arg("--version").output().ok()?;
+            if output.status.success() {
+                let stdout = std::str::from_utf8(&output.stdout).ok()?;
+                Some(stdout.starts_with("cargo ") && stdout.contains("-nightly "))
+            } else {
+                None
+            }
+        })
+        .unwrap_or(false);
+
+    let rustup_has_nightly = path_rustup
+        .as_ref()
+        .and_then(|path_rustup| {
+            let output = Command::new(path_rustup)
+                .args(["run", "nightly", "cargo"])
+                .arg("--version")
+                .output()
+                .ok()?;
+            if output.status.success() {
+                let stdout = std::str::from_utf8(&output.stdout).ok()?;
+                Some(stdout.starts_with("cargo ") && stdout.contains("-nightly "))
+            } else {
+                None
+            }
+        })
+        .unwrap_or(false);
+
+    let mut command;
+
+    let command = if env_cargo_is_nightly {
+        command = Command::new(env_cargo.unwrap());
+        &mut command
+    } else if path_cargo_is_nightly {
+        command = Command::new(path_cargo.unwrap());
+        &mut command
+    } else if rustup_has_nightly {
+        command = Command::new(path_rustup.unwrap());
+        command.args(["run", "nightly", "cargo"])
+    } else {
+        panic!("Rust nightly toolchain required, but not found in env or path");
+    };
+
+    let status = command.arg("fmt").args(args).status()?;
+    if !status.success() {
+        bail!("{:?} failed with {:?}", &command, &status)
+    }
 
     Ok(())
 }

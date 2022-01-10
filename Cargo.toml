@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 name = "cargo-format"
 repository = "https://github.com/jeremyBanks/cargo-format"
 resolver = "2"
-version = "0.0.4-dev"
+version = "0.0.4"
 
 [package.metadata.release]
 allow-branch = ["trunk"]

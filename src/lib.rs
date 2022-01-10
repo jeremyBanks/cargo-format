@@ -95,7 +95,7 @@ pub fn main() -> Result<()> {
         command = Command::new(path_rustup.unwrap());
         command.args(["run", "nightly", "cargo"])
     } else {
-        panic!("Rust nightly toolchain with rustfmt required, but not found in env or path.");
+        bail!("Rust nightly toolchain with rustfmt required, but not found in env or path.");
     };
 
     let status = command.arg("fmt").args(args).status()?;

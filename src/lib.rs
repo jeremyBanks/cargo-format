@@ -8,8 +8,11 @@
 
 use {
     eyre::{bail, Result},
-    std::{env, process::Command},
-    tracing::{instrument, warn},
+    std::{
+        env,
+        process::{self, Command},
+    },
+    tracing::{debug, instrument, warn},
     which::which,
 };
 
@@ -35,7 +38,7 @@ pub fn main() -> Result<()> {
         &env_args[1..]
     };
 
-    let env_cargo_is_nightly = env_cargo
+    let env_cargo_has_nightly = env_cargo
         .as_ref()
         .and_then(|env_cargo| {
             let output = Command::new(env_cargo)
@@ -51,7 +54,7 @@ pub fn main() -> Result<()> {
         })
         .unwrap_or(false);
 
-    let path_cargo_is_nightly = path_cargo
+    let path_cargo_has_nightly = path_cargo
         .as_ref()
         .and_then(|path_cargo| {
             let output = Command::new(path_cargo)
@@ -85,25 +88,39 @@ pub fn main() -> Result<()> {
         .unwrap_or(false);
 
     let mut command;
-    let command = if env_cargo_is_nightly {
+    let command = if env_cargo_has_nightly {
+        debug!("Using cargo-fmt from nightly $CARGO in env.");
         command = Command::new(env_cargo.unwrap());
         &mut command
-    } else if path_cargo_is_nightly {
+    } else if path_cargo_has_nightly {
+        debug!("Using cargo-fmt from nightly cargo in path.");
         command = Command::new(path_cargo.unwrap());
         &mut command
     } else if rustup_has_nightly {
+        debug!("Using cargo-fmt from nightly cargo via rustup.");
         command = Command::new(path_rustup.unwrap());
         command.args(["run", "nightly", "cargo"])
     } else {
         bail!("Rust nightly toolchain with rustfmt required, but not found in env or path.");
     };
 
-    let status = command.arg("fmt").args(args).status()?;
-    if !status.success() {
-        bail!("{:?} failed with {:?}", &command, &status)
-    }
+    let command = command.arg("fmt").args(args);
 
-    Ok(())
+    #[allow(unreachable_code)]
+    if cfg!(unix) {
+        debug!("execing {:?}", command);
+        #[cfg(unix)]
+        return Err(std::os::unix::process::CommandExt::exec(command).into());
+        unreachable!()
+    } else {
+        debug!("running {:?}", command);
+        let status = command.status()?;
+        if status.success() {
+            Ok(())
+        } else {
+            process::exit(status.code().unwrap_or(1))
+        }
+    }
 }
 
 /// Initialize the typical global environment for cargo-format's [main] CLI

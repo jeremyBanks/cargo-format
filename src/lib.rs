@@ -38,10 +38,13 @@ pub fn main() -> Result<()> {
     let env_cargo_is_nightly = env_cargo
         .as_ref()
         .and_then(|env_cargo| {
-            let output = Command::new(env_cargo).arg("--version").output().ok()?;
+            let output = Command::new(env_cargo)
+                .args(["fmt", "--version"])
+                .output()
+                .ok()?;
             if output.status.success() {
                 let stdout = std::str::from_utf8(&output.stdout).ok()?;
-                Some(stdout.starts_with("cargo ") && stdout.contains("-nightly "))
+                Some(stdout.starts_with("rustfmt ") && stdout.contains("-nightly "))
             } else {
                 None
             }
@@ -51,10 +54,13 @@ pub fn main() -> Result<()> {
     let path_cargo_is_nightly = path_cargo
         .as_ref()
         .and_then(|path_cargo| {
-            let output = Command::new(path_cargo).arg("--version").output().ok()?;
+            let output = Command::new(path_cargo)
+                .args(["fmt", "--version"])
+                .output()
+                .ok()?;
             if output.status.success() {
                 let stdout = std::str::from_utf8(&output.stdout).ok()?;
-                Some(stdout.starts_with("cargo ") && stdout.contains("-nightly "))
+                Some(stdout.starts_with("rustfmt ") && stdout.contains("-nightly "))
             } else {
                 None
             }
@@ -66,12 +72,12 @@ pub fn main() -> Result<()> {
         .and_then(|path_rustup| {
             let output = Command::new(path_rustup)
                 .args(["run", "nightly", "cargo"])
-                .arg("--version")
+                .args(["fmt", "--version"])
                 .output()
                 .ok()?;
             if output.status.success() {
                 let stdout = std::str::from_utf8(&output.stdout).ok()?;
-                Some(stdout.starts_with("cargo ") && stdout.contains("-nightly "))
+                Some(stdout.starts_with("rustfmt ") && stdout.contains("-nightly "))
             } else {
                 None
             }
@@ -79,7 +85,6 @@ pub fn main() -> Result<()> {
         .unwrap_or(false);
 
     let mut command;
-
     let command = if env_cargo_is_nightly {
         command = Command::new(env_cargo.unwrap());
         &mut command
@@ -90,7 +95,7 @@ pub fn main() -> Result<()> {
         command = Command::new(path_rustup.unwrap());
         command.args(["run", "nightly", "cargo"])
     } else {
-        panic!("Rust nightly toolchain required, but not found in env or path");
+        panic!("Rust nightly toolchain with rustfmt required, but not found in env or path.");
     };
 
     let status = command.arg("fmt").args(args).status()?;

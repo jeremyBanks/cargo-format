@@ -8,7 +8,7 @@
 
 use {
     eyre::Result,
-    std::{env, process::Command},
+    std::{env},
     tracing::{instrument, warn},
 };
 
@@ -23,11 +23,9 @@ use {
 /// For other fatal errors.
 #[instrument(level = "debug")]
 pub fn main() -> Result<()> {
-    Command::new("cargo")
-        .arg("+nightly")
-        .arg("fmt")
-        .args(std::env::args().skip(1))
-        .status()?;
+    let env_args = env::args().collect::<Vec<_>>();
+    let env_cargo = env::var("CARGO").unwrap_or_default();
+    dbg!(env_args, env_cargo);
 
     Ok(())
 }
